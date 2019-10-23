@@ -43,8 +43,6 @@ void drawInstructionsScreen(int game) //0=TestGame  //TODO: add game picture log
       dirText = "ERROR: GAME DOES NOT EXIST";
       buttonsText = "ERROR: GAME DOES NOT EXIST";
   }
-  
-  //tft.fillScreen(0x0000);
 
   //picture Placeholder
   tft.fillRect(110,8,100,100,0xFFFF);
