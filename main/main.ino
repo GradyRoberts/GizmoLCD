@@ -574,12 +574,10 @@ void loop() {
         nick[1] = 'A';
         nick[2] = 'H';
         writeNick();
-      } 
-      else {
-        Serial.println("Switching to home screen!\n");
-        currentPage = 'H';
-        drawHomeScreen();
       }
+      Serial.println("Switching to home screen!\n");
+      currentPage = 'H';
+      drawHomeScreen();
     }
   }
 
