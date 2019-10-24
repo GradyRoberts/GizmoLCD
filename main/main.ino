@@ -61,9 +61,23 @@ int joyPicDir = 1;//-1,1
 int x1,y1,x2,y2,x3,y3,x4,y4;
 unsigned long animTimer;
 
+// Game select
+String games[] = {"Tetris", "Snake", "Pong", "Space Invaders"};
+int numGames = 4;
+int currentGame = 1;
+int triH = 50;
+int triW = 70;
+int triTapBuf = 5;
+int triSep = 70; // pixels between the triangle and the screen middle
+unsigned long selectTimer;
+
+// Game over
+char banned[][4] = {"fag","fgt","ngr","nig","cnt","dyk","knt","gay","gey","gei","gai","jew","joo","jap","wop","kik","kyk","poc","kyq","kkk","guc","guk","guq","azn"};
+char nick[] = {'A', 'A', 'A'};
+unsigned long txtTimer;
 
 
-void drawRectButton(int x, int y, int w, int h, int textSize, char text[]) {
+void drawRectButton(int x, int y, int w, int h, int textSize, String text) {
   tft.fillRect(x, y, w, h, RED);
   tft.drawRect(x, y, w, h, YELLOW);
   tft.setCursor(x, y);
@@ -87,7 +101,7 @@ void drawLeaderboards() {
   tft.print("GameName");
 
   //"HIGH SCORES"
-  tft.setCursor(0, 50);e
+  tft.setCursor(0, 50);
   tft.setTextColor(WHITE); tft.setTextSize(3);
   tft.print("HIGH SCORES");
 
@@ -144,6 +158,35 @@ void drawLeaderboards() {
   tft.setCursor(200, 300);
   tft.setTextColor(YELLOW); tft.setTextSize(2);
   tft.print("GHI"); //3rd place player
+}
+
+void redrawGameTitle(){
+  drawRectButton(10, h/2-50, 300, 100, 4, games[currentGame]);
+}
+
+void drawGameSelectionScreen() {
+  tft.fillScreen(BLACK);
+  tft.setCursor(20,20);
+  tft.setTextColor(RED); tft.setTextSize(4);
+  tft.println("Pick a game");
+
+  // https://thestempedia.com/tutorials/tft-graphics/
+  tft.fillTriangle(
+    w/2-triW/2, h/2-triSep, 
+    w/2, h/2-triSep-triH, 
+    w/2+triW/2, h/2-triSep, 
+    CYAN
+  );
+
+  redrawGameTitle();
+  
+  tft.fillTriangle(
+    w/2-triW/2, h/2+triSep, 
+    w/2, h/2+triSep+triH, 
+    w/2+triW/2, h/2+triSep, 
+    CYAN
+  );
+
 }
 
 void drawInstructionsScreen(int game) //0=TestGame  //TODO: add game picture logic
@@ -292,24 +335,98 @@ void drawGameOverScreen(int score) {
   tft.println("Game Over...");
   tft.print("Score: "); tft.println(score);
 
-  tft.setTextColor(BLACK); tft.setTextSize(5);
+  tft.setTextColor(BLACK); tft.setTextSize(4);
   
   // Left char
-  tft.fillTriangle(w/2-25-60, h/2-35, w/2-25-10, h/2-35, w/2-25-35, h/2 - 78, BLUE); // Top triangle
-  tft.fillRect(w/2-25-60, h/2-25, 50, 50, WHITE); // Box
-  tft.setCursor(w/2-25-60+12, h/2-25+10); tft.print("A"); // Char
+  nick[0] = 'A';
+  tft.fillTriangle(75, 205, 125, 205, 100, 162, BLUE); // Top triangle
+  tft.fillRect(75, 215, 50, 50, WHITE); // Box
+  tft.setCursor(90, 225); tft.print(nick[0]); // Char
+  tft.fillTriangle(75, 275, 125, 275, 100, 318, BLUE); // Bottom triangle
     
   // Middle char
-  tft.fillTriangle(w/2-25, h/2-35, w/2-25+50, h/2-35, w/2, h/2 - 78, BLUE); // Top triangle
-  tft.fillRect(w/2-25,h/2-25,50,50,WHITE); // Box
-  tft.setCursor(w/2-25+12, h/2-25+10); tft.print("A"); // Char
+  nick[1] = 'A';
+  tft.fillTriangle(135, 205, 185, 205, 160, 162, BLUE); // Top triangle
+  tft.fillRect(135, 215, 50, 50, WHITE); // Box
+  tft.setCursor(150, 225); tft.print(nick[1]); // Char
+  tft.fillTriangle(135, 275, 185, 275, 160, 318, BLUE); // Bottom triangle
 
   // Right char
-  tft.fillTriangle(w/2-25+60, h/2-35, w/2-25+110, h/2-35, w/2-25+85, h/2 - 78, BLUE); // Top triangle
-  tft.fillRect(w/2-25+60, h/2-25, 50, 50, WHITE); // Box
-  tft.setCursor(w/2-25+60+12, h/2-25+10); tft.print("A"); // Char
+  nick[2] = 'A';
+  tft.fillTriangle(195, 205, 245, 205, 220, 162, BLUE); // Top triangle
+  tft.fillRect(195, 215, 50, 50, WHITE); // Box
+  tft.setCursor(210, 225); tft.print(nick[2]); // Char
+  tft.fillTriangle(195, 275, 245, 275, 220, 318, BLUE); // Bottom triangle
   
-  drawRectButton(10, 420, 300, 50, 4, "SELECT GAME");
+  drawRectButton(40, 420, 240, 50, 4, "SUBMIT");
+}
+
+void updateNick(TSPoint p) {
+  bool upToDate = true;
+  
+  if ( pointIn(75, 162, 50, 50, p) ) { // Top Left
+    if (nick[0] <= 'A') { nick[0] = 'Z'; }
+    else { nick[0]--; }
+
+    upToDate = false;
+  }
+  else if ( pointIn(135, 162, 50, 50, p) ) { // Top Middle
+    if (nick[1] <= 'A') { nick[1] = 'Z'; }
+    else { nick[1]--; }
+    
+    upToDate = false;
+  }
+  else if ( pointIn(195, 162, 50, 50, p) ) { // Top Right
+    if (nick[2] <= 'A') { nick[2] = 'Z'; }
+    else { nick[2]--; }
+
+    upToDate = false;
+  }
+
+  else if ( pointIn(75, 275, 50, 50, p) ) { // Bottom Left
+    if (nick[0] >= 'Z') { nick[0] = 'A'; }
+    else { nick[0]++; }
+
+    upToDate = false;
+  }
+  else if ( pointIn(135, 275, 50, 50, p) ) { // Bottom Middle
+    if (nick[1] >= 'Z') { nick[1] = 'A'; }
+    else { nick[1]++; }
+
+    upToDate = false;
+  }
+  else if ( pointIn(195, 275, 50, 50, p) ) { // Bottom Right
+    if (nick[2] >= 'Z') { nick[2] = 'A'; }
+    else { nick[2]++; }
+
+    upToDate = false;
+  }
+
+  if (!upToDate) { writeNick(); }
+}
+
+void writeNick() {
+  tft.setTextColor(BLACK);
+  tft.setTextSize(4);
+  
+  tft.fillRect(75, 215, 50, 50, WHITE); // Box
+  tft.setCursor(90, 225); tft.print(nick[0]); // Char
+  
+  tft.fillRect(135, 215, 50, 50, WHITE);
+  tft.setCursor(150, 225); tft.print(nick[1]);
+  
+  tft.fillRect(195, 215, 50, 50, WHITE);
+  tft.setCursor(210, 225); tft.print(nick[2]);
+}
+
+bool checkIfBanned() {
+  char tmp[4] = {nick[0]+32, nick[1]+32, nick[2]+32, '\0'};
+  for (int i = 0; i < sizeof(banned)/sizeof(banned[0]); i++) {
+    if (strcmp(tmp, banned[i]) == 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void windowScroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint16_t *buf)
@@ -326,6 +443,17 @@ void windowScroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int
     tft.pushColors(buf + dy, ht - dy, 1);
     tft.pushColors(buf + 0, dy, 0);
   }
+}
+
+bool pointIn(int x, int y, int w, int h, TSPoint p){
+  if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
+    if(p.x > x && p.x < x+w){
+      if(p.y > y && p.y < y+h){
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 TSPoint readTS() {
@@ -349,7 +477,6 @@ TSPoint readTS() {
 
   return p;
 }
-
 
 void setup() {
   Serial.begin(9600);
@@ -376,24 +503,53 @@ void loop() {
 
   // Home screen
   if (currentPage == 'H') {
-    if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-      if (p.y >= 420) {
-        //Serial.println("Switching to game select screen!\n");
-        //currentPage = 'G';
-        //drawGameSelectScreen(0);
+    if ( pointIn(0,420,w,h,p) ) {
+      Serial.println("Switching to game select screen!\n");
+      currentPage = 'G';
+      drawGameSelectionScreen();
+      selectTimer = millis();
+    }
+  }
 
-        Serial.println("Switching to instruction screen!\n");
-        currentPage = 'I';
-        drawInstructionsScreen(0);
-        animTimer = millis();
+  // Game select screen
+  else if (currentPage == 'G') {
+    if(pointIn(w/2-triW/2, h/2-triSep-triH, triW, triH, p)){
+      if (millis() - selectTimer >= 100 || selectTimer > millis()) {
+        Serial.println("Tapped on upper tri");
+        currentGame--;
+        if(currentGame < 0){
+          currentGame = numGames-1;
+        }
+      
+        redrawGameTitle();
+        selectTimer = millis();
       }
+    }
+    else if(pointIn(w/2-triW/2, h/2+triSep, triW, triH, p)){
+      if (millis() - selectTimer >= 100 || selectTimer > millis()) {
+        Serial.println("Tapped on lower tri");
+        currentGame++;
+        if(currentGame >= numGames){
+          currentGame = 0;
+        }
+        
+        redrawGameTitle();
+        selectTimer = millis();
+      }
+    }
+    
+    else if(pointIn(10, h/2-50, 300, 100, p)) {
+      Serial.println("Switching to instruction screen!\n");
+      currentPage = 'I';
+      drawInstructionsScreen(0);
+      animTimer = millis();
     }
   }
 
   // Instructions screen
   //    Show this screen while game is playing and wait for serial from PROPELLER
   else if (currentPage == 'I') {
-    if (millis() - animTimer >= 400) {
+    if (millis() - animTimer >= 400 || animTimer > millis()) {
       Serial.println("Updating instructions screen");
       updateInstructionsScreen();
       animTimer = millis();
@@ -402,13 +558,24 @@ void loop() {
       Serial.println("Switching to game over screen!\n");
       currentPage = 'O';
       drawGameOverScreen(69);
+      txtTimer = millis();
     }
   }
   
   // Game over screen
   else if (currentPage == 'O') {
-    if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
-      if (p.y >= 420) {
+    if (millis() - txtTimer >= 100 || txtTimer > millis()) {
+      updateNick(p);
+      txtTimer = millis();
+    }
+    if ( pointIn(0,420,w,h,p) ) {
+      if (checkIfBanned()) {
+        nick[0] = 'N';
+        nick[1] = 'A';
+        nick[2] = 'H';
+        writeNick();
+      } 
+      else {
         Serial.println("Switching to home screen!\n");
         currentPage = 'H';
         drawHomeScreen();
