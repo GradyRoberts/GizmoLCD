@@ -1,9 +1,11 @@
+#include <EEPROM.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_TFTLCD.h>
 #include <MCUFRIEND_kbv.h>
 #include <TouchScreen.h>
 
+// Color definitions
 #define BLACK   0x0000
 #define BLUE    0x001F
 #define RED     0xF800
@@ -34,12 +36,7 @@
 #define MINPRESSURE 10
 #define MAXPRESSURE 1000
 
-
-/* ---FUNCTIONS--- */
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b))
-#endif
-
+// Scrolling
 #ifndef READGRAM
 #define READGRAM(x, y, buf, w, h)  tft.readGRAM(x, y, buf, w, h)
 #endif
@@ -72,15 +69,57 @@ int triSep = 70; // pixels between the triangle and the screen middle
 unsigned long selectTimer;
 
 // Game over
-char banned[][4] = {"fag","fgt","ngr","nig","cnt","dyk","knt","gay","gey","gei","gai","jew","joo","jap","wop","kik","kyk","poc","kyq","kkk","guc","guk","guq","azn"};
+char banned[][4] =                                                                                                                  {"fag","fgt","ngr","nig","cnt","dyk","knt","gay","gey","gei","gai","jew","joo","jap","wop","kik","kyk","poc","kyq","kkk","guc","guk","guq","azn"};
 char nick[] = {'A', 'A', 'A'};
 unsigned long txtTimer;
 
+struct HighScore {
+  char nick[3];
+  unsigned int score;
+
+  bool operator==(const HighScore &a) {
+    return (strcmp(nick, a.nick) == 0) && (score==(a.score));
+  }
+
+  String toString() {
+    return "NAME=" + String(nick) + "\nSCORE=" + String(score);
+  }
+};
+
+
+int getTextWidth(String text, int textSize) {
+  int w, numChrs;
+
+  numChrs = text.length();
+  w = textSize*(5*numChrs + numChrs - 1);
+  
+  return w;
+}
+
+int getTextHeight(String text, int textSize) {
+  int h, numChrs;
+
+  numChrs = text.length();
+  h = textSize*7/2;
+
+  return h;
+}
 
 void drawRectButton(int x, int y, int w, int h, int textSize, String text) {
   tft.fillRect(x, y, w, h, RED);
-  tft.drawRect(x, y, w, h, YELLOW);
-  tft.setCursor(x, y);
+  tft.drawRect(x, y, w, h, WHITE);
+  tft.drawRect(x-1, y-1, w+2, h+2, WHITE);
+
+  int textW = getTextWidth(text, textSize);
+  int textH = getTextHeight(text, textSize);
+  while ( textW >= w || textH >= h ) {
+    textW = getTextWidth(text, textSize-1);
+    textH = getTextHeight(text, textSize-1);
+    textSize--;
+  }
+  tft.setTextSize(textSize);
+  tft.setCursor(x+w/2-textW/2, y+h/2-textH);
+  
   tft.setTextColor(WHITE); tft.setTextSize(textSize);
   tft.println(text);
 }
